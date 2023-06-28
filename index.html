@@ -1,0 +1,47 @@
+<meta charset="UTF-8" />
+<title>Jimaku</title>
+<script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.13.1/dist/ort.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@ricky0123/vad/dist/index.browser.js"></script>
+<script type="module">
+  try {
+    const myvad = await vad.MicVAD.new({
+      positiveSpeechThreshold: 0.7,
+      negativeSpeechThreshold: 0.7 - 0.15,
+      minSpeechFrames: 5,
+      preSpeechPadFrames: 1,
+      redemptionFrames: 1,
+      onSpeechEnd: async (arr) => {
+        const wavBuffer = vad.utils.encodeWAV(arr);
+        var file = new File([wavBuffer], `file${Date.now()}.wav`);
+        let formData = new FormData();
+        formData.append("file", file);
+        try {
+          document.getElementById("status").innerText = "processing...";
+          const t = new Date().getTime();
+          const resp = await fetch("/api/whisper", {
+            method: "POST",
+            body: formData,
+          });
+          const resp2 = await resp.json();
+          const result_text = resp2.text;
+          document.getElementById("hoge").innerText = result_text;
+          document.getElementById("status").innerText = "done in " + (new Date().getTime() - t) + "ms";
+        } catch (err) {
+          console.log(err);
+        }
+      },
+    });
+    myvad.start();
+  } catch (e) {
+    console.error("Failed:", e);
+  }
+</script>
+<h3>Nyaocat speech-to-text test</h1>
+<p id="hoge"></p>
+<p id="status"></p>
+<style>
+  body {
+    background-color: white;
+    font-size: 30pt;
+  }
+</style>
